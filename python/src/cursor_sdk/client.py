@@ -1,3 +1,10 @@
+"""Synchronous HTTP client for Cursor's public APIs.
+
+This module provides the CursorClient class which implements a synchronous
+interface to all documented Cursor API endpoints. Each endpoint is exposed
+as a method on the client instance.
+"""
+
 from __future__ import annotations
 
 import base64
@@ -104,6 +111,9 @@ ENDPOINT_SPECS: tuple[EndpointSpec, ...] = (
     EndpointSpec('POST', '/v0/agents/{id}/stop', 'post_v0_agents_id_stop'),
 )
 
+__all__ = ["CursorClient", "AuthType", "ENDPOINT_SPECS"]
+
+
 class CursorClient:
     """Synchronous client for the public Cursor APIs.
 
@@ -178,13 +188,25 @@ class CursorClient:
 
     def __exit__(
         self,
+<<<<<<< HEAD
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+=======
         exc_type: Optional[type[BaseException]],
         exc: Optional[BaseException],
         tb: Optional[TracebackType],
+>>>>>>> origin/main
     ) -> None:
         self.close()
 
     def _auth_header_value(self) -> str:
+        """Generate the Authorization header value.
+
+        Note: Basic authentication uses base64 encoding, which is NOT encryption.
+        The credentials are easily decodable. Always use HTTPS to protect credentials
+        in transit. The httpx client enforces HTTPS by default.
+        """
         if self._auth == "bearer":
             return f"Bearer {self._api_key}"
 
