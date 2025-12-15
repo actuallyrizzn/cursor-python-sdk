@@ -53,6 +53,7 @@ def server_base_url() -> str:
 
 
 def test_real_http_round_trip(server_base_url: str) -> None:
-    client = CursorClient("k", base_url=server_base_url)
+    # e2e test uses HTTP, so we need to allow it for testing
+    client = CursorClient("k", base_url=server_base_url, allow_http=True)
     assert client.get_teams_members() == {"teamMembers": []}
     client.close()
