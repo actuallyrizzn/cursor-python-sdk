@@ -4,6 +4,17 @@ Source: https://cursor.com/docs/api
 
 This file is generated from the public Cursor docs and is intended to capture **all API endpoints, parameters, and response formats** present in those docs at generation time.
 
+## Licensing / attribution
+
+This repository is licensed as follows:
+
+- **Code**: GNU Affero General Public License v3.0 only (AGPL-3.0-only).
+- **Documentation and other non-code content**: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+
+This particular file is **generated** from public content at `https://cursor.com/docs/`.
+It may include or closely paraphrase third-party material; it is provided here for developer convenience.
+If you reuse generated output, ensure your usage complies with Cursor’s terms and any applicable copyright rules.
+
 ## Endpoint index
 
 | Method | Path | Documented in |

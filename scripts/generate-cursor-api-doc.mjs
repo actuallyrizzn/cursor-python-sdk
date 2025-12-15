@@ -7,6 +7,18 @@ import { load as loadHtml } from 'cheerio';
 const START_URL = 'https://cursor.com/docs/api';
 const OUTPUT_MD_PATH = path.resolve('docs/api.md');
 const OUTPUT_ENDPOINTS_JSON_PATH = path.resolve('docs/api-endpoints.json');
+const GENERATED_NOTICE = [
+  '## Licensing / attribution',
+  '',
+  'This repository is licensed as follows:',
+  '',
+  '- **Code**: GNU Affero General Public License v3.0 only (AGPL-3.0-only).',
+  '- **Documentation and other non-code content**: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).',
+  '',
+  'This particular file is **generated** from public content at `https://cursor.com/docs/`.',
+  'It may include or closely paraphrase third-party material; it is provided here for developer convenience.',
+  'If you reuse generated output, ensure your usage complies with Cursor’s terms and any applicable copyright rules.',
+].join('\\n');
 
 function normalizeUrl(rawUrl) {
   try {
@@ -297,6 +309,8 @@ async function main() {
   lines.push('');
   lines.push('This file is generated from the public Cursor docs and is intended to capture **all API endpoints, parameters, and response formats** present in those docs at generation time.');
   lines.push('');
+  lines.push(GENERATED_NOTICE);
+  lines.push('');
   lines.push('## Endpoint index');
   lines.push('');
   lines.push('| Method | Path | Documented in |');
@@ -330,7 +344,17 @@ async function main() {
   await fs.writeFile(OUTPUT_MD_PATH, compactEmptyLines(lines.join('\n')), 'utf8');
   await fs.writeFile(
     OUTPUT_ENDPOINTS_JSON_PATH,
-    JSON.stringify({ generatedAt: new Date().toISOString(), source: START_URL, pages: sortedPages, endpointIndex }, null, 2) + '\n',
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        source: START_URL,
+        licensingNotice: GENERATED_NOTICE,
+        pages: sortedPages,
+        endpointIndex,
+      },
+      null,
+      2,
+    ) + '\n',
     'utf8',
   );
 
