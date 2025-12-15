@@ -13,7 +13,7 @@ class CursorError(Exception):
 class CursorAPIError(CursorError):
     status_code: int
     message: str
-    body: Any = None
+    body: Any = None  # Any is necessary as error bodies can be dict, list, str, or other types
     headers: Optional[Mapping[str, str]] = None
     method: Optional[str] = None
     url: Optional[str] = None
