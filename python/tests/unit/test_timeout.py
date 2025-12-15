@@ -58,3 +58,4 @@ def test_timeout_exception_propagates() -> None:
         client.get_teams_members()
     client.close()
 
+

@@ -114,3 +114,4 @@ def test_auth_error_message_extraction() -> None:
     assert exc.value.message == "Invalid credentials"
     client.close()
 
+

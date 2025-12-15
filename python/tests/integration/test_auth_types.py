@@ -69,3 +69,4 @@ def test_both_auth_types_work() -> None:
     assert bearer_client.get_v0_me() == {"auth": "bearer"}
     bearer_client.close()
 
+

@@ -86,3 +86,4 @@ def test_invalid_json_fallback_to_text() -> None:
     assert result == "not valid json {"
     client.close()
 
+

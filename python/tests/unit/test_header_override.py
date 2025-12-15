@@ -36,3 +36,4 @@ def test_extra_headers_are_merged_correctly() -> None:
     assert headers["Authorization"].startswith("Basic ")
     client.close()
 
+
