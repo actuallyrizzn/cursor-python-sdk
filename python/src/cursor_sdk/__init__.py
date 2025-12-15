@@ -1,3 +1,8 @@
+"""Cursor endpoint SDK for Python.
+
+A synchronous Python client for Cursor's public APIs.
+"""
+
 from cursor_sdk.client import CursorClient
 from cursor_sdk.errors import (
     CursorAPIError,

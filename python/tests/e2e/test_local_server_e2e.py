@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from cursor_sdk import CursorClient
+from tests.test_helpers import TEST_API_KEY_SHORT
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -16,7 +17,7 @@ class _Handler(BaseHTTPRequestHandler):
             return
 
         auth = self.headers.get("Authorization")
-        expected = "Basic " + base64.b64encode(b"k:").decode("ascii")
+        expected = "Basic " + base64.b64encode(f"{TEST_API_KEY_SHORT}:".encode("utf-8")).decode("ascii")
         if auth != expected:
             self.send_response(401)
             self.send_header("Content-Type", "application/json")
@@ -53,6 +54,6 @@ def server_base_url() -> str:
 
 
 def test_real_http_round_trip(server_base_url: str) -> None:
-    client = CursorClient("k", base_url=server_base_url)
+    client = CursorClient(TEST_API_KEY_SHORT, base_url=server_base_url)
     assert client.get_teams_members() == {"teamMembers": []}
     client.close()

@@ -4,24 +4,25 @@ import httpx
 import pytest
 
 from cursor_sdk import CursorClient
+from tests.test_helpers import TEST_API_KEY_BASIC, TEST_API_KEY_BEARER, TEST_API_KEY_SHORT
 
 
 def test_basic_auth_header_value() -> None:
-    client = CursorClient("key_abc")
-    token = base64.b64encode(b"key_abc:").decode("ascii")
+    client = CursorClient(TEST_API_KEY_BASIC)
+    token = base64.b64encode(f"{TEST_API_KEY_BASIC}:".encode("utf-8")).decode("ascii")
     assert client._auth_header_value() == f"Basic {token}"
     client.close()
 
 
 def test_bearer_auth_header_value() -> None:
-    client = CursorClient("tok", auth="bearer")
-    assert client._auth_header_value() == "Bearer tok"
+    client = CursorClient(TEST_API_KEY_BEARER, auth="bearer")
+    assert client._auth_header_value() == f"Bearer {TEST_API_KEY_BEARER}"
     client.close()
 
 
 def test_build_headers_merges_default_and_extra() -> None:
     client = CursorClient(
-        "k",
+        TEST_API_KEY_SHORT,
         default_headers={"X-Foo": "1", "Authorization": "will-be-overridden"},
     )
 
@@ -52,7 +53,7 @@ def test_context_manager_calls_close() -> None:
             closed["value"] = True
             super().close()
 
-    with SpyClient("k", base_url="https://example.test", transport=transport) as c:
+    with SpyClient(TEST_API_KEY_SHORT, base_url="https://example.test", transport=transport) as c:
         assert c.get_teams_members() == {"ok": True}
 
     assert closed["value"] is True

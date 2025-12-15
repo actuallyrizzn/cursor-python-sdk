@@ -1,7 +1,23 @@
+"""Exception classes for the Cursor SDK.
+
+This module defines the exception hierarchy used throughout the SDK
+for handling API errors, authentication failures, rate limits, and
+network issues.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional
+
+
+__all__ = [
+    "CursorError",
+    "CursorAPIError",
+    "CursorAuthError",
+    "CursorRateLimitError",
+    "CursorNetworkError",
+]
 
 
 class CursorError(Exception):
