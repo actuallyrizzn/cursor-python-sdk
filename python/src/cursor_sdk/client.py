@@ -240,7 +240,7 @@ class CursorClient:
         path: str,
         *,
         params: Optional[Mapping[str, Any]] = None,
-        json: Any = None,
+        json: Any = None,  # Any is necessary here as JSON can be dict, list, or primitive types
         headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[float] = None,
     ) -> Union[dict, list, str, None]:
