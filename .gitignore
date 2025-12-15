@@ -12,6 +12,9 @@ yarn-error.log*
 # OS
 .DS_Store
 
+# Temporary files and test data
+tmp/
+
 # Python
 __pycache__/
 *.py[cod]

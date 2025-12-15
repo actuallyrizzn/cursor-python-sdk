@@ -14,7 +14,14 @@ python -m pip install -e "./python[dev]"
 ### Run tests
 
 ```bash
-python -m pytest -q /workspace/python/tests
+python -m pytest tests/
+```
+
+Or from the project root:
+
+```bash
+cd python
+python -m pytest tests/
 ```
 
 ### Regenerate API documentation

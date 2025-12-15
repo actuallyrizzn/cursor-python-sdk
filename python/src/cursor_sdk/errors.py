@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional
+from types import TracebackType
 
 
 __all__ = [
@@ -28,12 +29,17 @@ class CursorError(Exception):
 class CursorAPIError(CursorError):
     status_code: int
     message: str
-    body: Any = None
+    body: Any = None  # Any is necessary as error bodies can be dict, list, str, or other types
     headers: Optional[Mapping[str, str]] = None
+    method: Optional[str] = None
+    url: Optional[str] = None
 
     def __str__(self) -> str:  # pragma: no cover
         # Keep the default repr noise out of user output.
-        return f"Cursor API error {self.status_code}: {self.message}"
+        context = ""
+        if self.method and self.url:
+            context = f" ({self.method} {self.url})"
+        return f"Cursor API error {self.status_code}: {self.message}{context}"
 
 
 class CursorAuthError(CursorAPIError):
@@ -47,6 +53,21 @@ class CursorRateLimitError(CursorAPIError):
 class CursorNetworkError(CursorError):
     """Raised on network/transport errors."""
 
-    def __init__(self, message: str, *, cause: Exception) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        cause: Exception,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> None:
         super().__init__(message)
         self.__cause__ = cause
+        self.method = method
+        self.url = url
+
+    def __str__(self) -> str:  # pragma: no cover
+        context = ""
+        if self.method and self.url:
+            context = f" ({self.method} {self.url})"
+        return f"{self.args[0]}{context}"
