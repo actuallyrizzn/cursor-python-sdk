@@ -47,6 +47,10 @@ client = CursorClient("YOUR_API_KEY", auth="bearer")
 - `POST /teams/spend` → `client.post_teams_spend(json={...})`
 - `GET /analytics/ai-code/commits.csv` → `client.get_analytics_ai_code_commits_csv()`
 
+**Note:** Method names can be long, but this design ensures a 1:1 mapping with the API documentation and prevents naming conflicts. The SDK supports endpoints from multiple API versions:
+- `/v0/*` endpoints are part of the v0 API
+- Non-prefixed endpoints (e.g., `/teams/*`, `/analytics/*`) are versioned independently
+
 Common kwargs:
 
 - `params`: query parameters
@@ -96,9 +100,11 @@ The integration test `python/tests/integration/test_all_endpoints_covered.py` en
 
 ### Development
 
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed development setup instructions.
+
 ```bash
 python -m pip install -e "./python[dev]"
-python -m pytest -q /workspace/python/tests
+python -m pytest tests/
 ```
 
 ### Licensing

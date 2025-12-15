@@ -2,6 +2,8 @@
 
 The Python SDK lives in `python/src/cursor_sdk` and exposes a synchronous `CursorClient`.
 
+> **Note:** This document provides detailed usage examples. For a quick overview, see the main [README.md](../README.md).
+
 ### Install
 
 ```bash
@@ -10,9 +12,17 @@ python -m pip install cursor-endpoint-sdk
 
 ### Quickstart
 
+The SDK supports both context manager and explicit close patterns:
+
 ```python
 from cursor_sdk import CursorClient
 
+# Context manager (recommended)
+with CursorClient("YOUR_API_KEY") as client:
+    me = client.get_v0_me()
+    print(me)
+
+# Explicit close
 client = CursorClient("YOUR_API_KEY")
 try:
     me = client.get_v0_me()

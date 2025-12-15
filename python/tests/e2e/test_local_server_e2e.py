@@ -49,7 +49,7 @@ def server_base_url() -> str:
     finally:
         httpd.shutdown()
         httpd.server_close()
-        t.join(timeout=2)
+        t.join(timeout=2.0)  # Shutdown timeout - using explicit float for clarity
 
 
 def test_real_http_round_trip(server_base_url: str) -> None:

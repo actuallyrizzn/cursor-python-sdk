@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import base64
-from typing import Any, Literal, Mapping, MutableMapping, Optional
+from typing import Any, Literal, Mapping, MutableMapping, NamedTuple, Optional
+from types import TracebackType
 
 import httpx
 
@@ -14,66 +15,104 @@ from cursor_sdk.errors import (
 
 AuthType = Literal["basic", "bearer"]
 
+# HTTP status code constants
+HTTP_STATUS_NOT_MODIFIED = 304
+HTTP_STATUS_UNAUTHORIZED = 401
+HTTP_STATUS_FORBIDDEN = 403
+HTTP_STATUS_TOO_MANY_REQUESTS = 429
 
-# Tuple of (HTTP method, path template, method name) for all API endpoints.
+# Default timeout in seconds
+DEFAULT_TIMEOUT = 30.0
+
+# Test timeout in seconds (for e2e tests)
+TEST_SERVER_SHUTDOWN_TIMEOUT = 2.0
+
+
+class EndpointSpec(NamedTuple):
+    """Specification for an API endpoint.
+
+    Attributes:
+        method: HTTP method (e.g., "GET", "POST")
+        path: Path template with :paramName or {paramName} format
+        method_name: Python method name derived from HTTP method + path
+    """
+
+    method: str
+    path: str
+    method_name: str
+
+
+# Tuple of endpoint specifications for all API endpoints.
 # Path templates use :paramName or {paramName} format for path parameters.
 # Method names are derived from HTTP method + path (e.g., GET /teams/members -> get_teams_members).
-ENDPOINT_SPECS: tuple[tuple[str, str, str], ...] = (
-    ('DELETE', '/settings/repo-blocklists/repos/:repoId', 'delete_settings_repo_blocklists_repos_repo_id'),
-    ('DELETE', '/teams/groups/:groupId', 'delete_teams_groups_group_id'),
-    ('DELETE', '/teams/groups/:groupId/members', 'delete_teams_groups_group_id_members'),
-    ('DELETE', '/v0/agents/{id}', 'delete_v0_agents_id'),
-    ('GET', '/analytics/ai-code/changes', 'get_analytics_ai_code_changes'),
-    ('GET', '/analytics/ai-code/changes.csv', 'get_analytics_ai_code_changes_csv'),
-    ('GET', '/analytics/ai-code/commits', 'get_analytics_ai_code_commits'),
-    ('GET', '/analytics/ai-code/commits.csv', 'get_analytics_ai_code_commits_csv'),
-    ('GET', '/analytics/by-user/agent-edits', 'get_analytics_by_user_agent_edits'),
-    ('GET', '/analytics/by-user/ask-mode', 'get_analytics_by_user_ask_mode'),
-    ('GET', '/analytics/by-user/client-versions', 'get_analytics_by_user_client_versions'),
-    ('GET', '/analytics/by-user/commands', 'get_analytics_by_user_commands'),
-    ('GET', '/analytics/by-user/mcp', 'get_analytics_by_user_mcp'),
-    ('GET', '/analytics/by-user/models', 'get_analytics_by_user_models'),
-    ('GET', '/analytics/by-user/plans', 'get_analytics_by_user_plans'),
-    ('GET', '/analytics/by-user/tabs', 'get_analytics_by_user_tabs'),
-    ('GET', '/analytics/by-user/top-file-extensions', 'get_analytics_by_user_top_file_extensions'),
-    ('GET', '/analytics/team/agent-edits', 'get_analytics_team_agent_edits'),
-    ('GET', '/analytics/team/ask-mode', 'get_analytics_team_ask_mode'),
-    ('GET', '/analytics/team/client-versions', 'get_analytics_team_client_versions'),
-    ('GET', '/analytics/team/commands', 'get_analytics_team_commands'),
-    ('GET', '/analytics/team/dau', 'get_analytics_team_dau'),
-    ('GET', '/analytics/team/leaderboard', 'get_analytics_team_leaderboard'),
-    ('GET', '/analytics/team/mcp', 'get_analytics_team_mcp'),
-    ('GET', '/analytics/team/models', 'get_analytics_team_models'),
-    ('GET', '/analytics/team/plans', 'get_analytics_team_plans'),
-    ('GET', '/analytics/team/tabs', 'get_analytics_team_tabs'),
-    ('GET', '/analytics/team/top-file-extensions', 'get_analytics_team_top_file_extensions'),
-    ('GET', '/settings/repo-blocklists/repos', 'get_settings_repo_blocklists_repos'),
-    ('GET', '/teams/audit-logs', 'get_teams_audit_logs'),
-    ('GET', '/teams/groups', 'get_teams_groups'),
-    ('GET', '/teams/groups/:groupId', 'get_teams_groups_group_id'),
-    ('GET', '/teams/members', 'get_teams_members'),
-    ('GET', '/v0/agents', 'get_v0_agents'),
-    ('GET', '/v0/agents/{id}', 'get_v0_agents_id'),
-    ('GET', '/v0/agents/{id}/conversation', 'get_v0_agents_id_conversation'),
-    ('GET', '/v0/me', 'get_v0_me'),
-    ('GET', '/v0/models', 'get_v0_models'),
-    ('GET', '/v0/repositories', 'get_v0_repositories'),
-    ('PATCH', '/teams/groups/:groupId', 'patch_teams_groups_group_id'),
-    ('POST', '/bugbot/repo/update', 'post_bugbot_repo_update'),
-    ('POST', '/settings/repo-blocklists/repos/upsert', 'post_settings_repo_blocklists_repos_upsert'),
-    ('POST', '/teams/daily-usage-data', 'post_teams_daily_usage_data'),
-    ('POST', '/teams/filtered-usage-events', 'post_teams_filtered_usage_events'),
-    ('POST', '/teams/groups', 'post_teams_groups'),
-    ('POST', '/teams/groups/:groupId/members', 'post_teams_groups_group_id_members'),
-    ('POST', '/teams/spend', 'post_teams_spend'),
-    ('POST', '/teams/user-spend-limit', 'post_teams_user_spend_limit'),
-    ('POST', '/v0/agents', 'post_v0_agents'),
-    ('POST', '/v0/agents/{id}/followup', 'post_v0_agents_id_followup'),
-    ('POST', '/v0/agents/{id}/stop', 'post_v0_agents_id_stop'),
+ENDPOINT_SPECS: tuple[EndpointSpec, ...] = (
+    EndpointSpec('DELETE', '/settings/repo-blocklists/repos/:repoId', 'delete_settings_repo_blocklists_repos_repo_id'),
+    EndpointSpec('DELETE', '/teams/groups/:groupId', 'delete_teams_groups_group_id'),
+    EndpointSpec('DELETE', '/teams/groups/:groupId/members', 'delete_teams_groups_group_id_members'),
+    EndpointSpec('DELETE', '/v0/agents/{id}', 'delete_v0_agents_id'),
+    EndpointSpec('GET', '/analytics/ai-code/changes', 'get_analytics_ai_code_changes'),
+    EndpointSpec('GET', '/analytics/ai-code/changes.csv', 'get_analytics_ai_code_changes_csv'),
+    EndpointSpec('GET', '/analytics/ai-code/commits', 'get_analytics_ai_code_commits'),
+    EndpointSpec('GET', '/analytics/ai-code/commits.csv', 'get_analytics_ai_code_commits_csv'),
+    EndpointSpec('GET', '/analytics/by-user/agent-edits', 'get_analytics_by_user_agent_edits'),
+    EndpointSpec('GET', '/analytics/by-user/ask-mode', 'get_analytics_by_user_ask_mode'),
+    EndpointSpec('GET', '/analytics/by-user/client-versions', 'get_analytics_by_user_client_versions'),
+    EndpointSpec('GET', '/analytics/by-user/commands', 'get_analytics_by_user_commands'),
+    EndpointSpec('GET', '/analytics/by-user/mcp', 'get_analytics_by_user_mcp'),
+    EndpointSpec('GET', '/analytics/by-user/models', 'get_analytics_by_user_models'),
+    EndpointSpec('GET', '/analytics/by-user/plans', 'get_analytics_by_user_plans'),
+    EndpointSpec('GET', '/analytics/by-user/tabs', 'get_analytics_by_user_tabs'),
+    EndpointSpec('GET', '/analytics/by-user/top-file-extensions', 'get_analytics_by_user_top_file_extensions'),
+    EndpointSpec('GET', '/analytics/team/agent-edits', 'get_analytics_team_agent_edits'),
+    EndpointSpec('GET', '/analytics/team/ask-mode', 'get_analytics_team_ask_mode'),
+    EndpointSpec('GET', '/analytics/team/client-versions', 'get_analytics_team_client_versions'),
+    EndpointSpec('GET', '/analytics/team/commands', 'get_analytics_team_commands'),
+    EndpointSpec('GET', '/analytics/team/dau', 'get_analytics_team_dau'),
+    EndpointSpec('GET', '/analytics/team/leaderboard', 'get_analytics_team_leaderboard'),
+    EndpointSpec('GET', '/analytics/team/mcp', 'get_analytics_team_mcp'),
+    EndpointSpec('GET', '/analytics/team/models', 'get_analytics_team_models'),
+    EndpointSpec('GET', '/analytics/team/plans', 'get_analytics_team_plans'),
+    EndpointSpec('GET', '/analytics/team/tabs', 'get_analytics_team_tabs'),
+    EndpointSpec('GET', '/analytics/team/top-file-extensions', 'get_analytics_team_top_file_extensions'),
+    EndpointSpec('GET', '/settings/repo-blocklists/repos', 'get_settings_repo_blocklists_repos'),
+    EndpointSpec('GET', '/teams/audit-logs', 'get_teams_audit_logs'),
+    EndpointSpec('GET', '/teams/groups', 'get_teams_groups'),
+    EndpointSpec('GET', '/teams/groups/:groupId', 'get_teams_groups_group_id'),
+    EndpointSpec('GET', '/teams/members', 'get_teams_members'),
+    EndpointSpec('GET', '/v0/agents', 'get_v0_agents'),
+    EndpointSpec('GET', '/v0/agents/{id}', 'get_v0_agents_id'),
+    EndpointSpec('GET', '/v0/agents/{id}/conversation', 'get_v0_agents_id_conversation'),
+    EndpointSpec('GET', '/v0/me', 'get_v0_me'),
+    EndpointSpec('GET', '/v0/models', 'get_v0_models'),
+    EndpointSpec('GET', '/v0/repositories', 'get_v0_repositories'),
+    EndpointSpec('PATCH', '/teams/groups/:groupId', 'patch_teams_groups_group_id'),
+    EndpointSpec('POST', '/bugbot/repo/update', 'post_bugbot_repo_update'),
+    EndpointSpec('POST', '/settings/repo-blocklists/repos/upsert', 'post_settings_repo_blocklists_repos_upsert'),
+    EndpointSpec('POST', '/teams/daily-usage-data', 'post_teams_daily_usage_data'),
+    EndpointSpec('POST', '/teams/filtered-usage-events', 'post_teams_filtered_usage_events'),
+    EndpointSpec('POST', '/teams/groups', 'post_teams_groups'),
+    EndpointSpec('POST', '/teams/groups/:groupId/members', 'post_teams_groups_group_id_members'),
+    EndpointSpec('POST', '/teams/spend', 'post_teams_spend'),
+    EndpointSpec('POST', '/teams/user-spend-limit', 'post_teams_user_spend_limit'),
+    EndpointSpec('POST', '/v0/agents', 'post_v0_agents'),
+    EndpointSpec('POST', '/v0/agents/{id}/followup', 'post_v0_agents_id_followup'),
+    EndpointSpec('POST', '/v0/agents/{id}/stop', 'post_v0_agents_id_stop'),
 )
 
 class CursorClient:
-    """Synchronous client for the public Cursor APIs."""
+    """Synchronous client for the public Cursor APIs.
+
+    This client provides methods for all documented Cursor API endpoints. Method names
+    are derived directly from the HTTP method and path (e.g., GET /teams/members becomes
+    get_teams_members). While these names can be long, this design ensures a 1:1 mapping
+    with the API documentation and prevents naming conflicts.
+
+    The SDK supports endpoints from multiple API versions:
+    - `/v0/*` endpoints are part of the v0 API
+    - Non-prefixed endpoints (e.g., `/teams/*`, `/analytics/*`) are versioned independently
+
+    See the main README.md for usage examples and authentication details.
+    """
 
     def __init__(
         self,
@@ -81,7 +120,7 @@ class CursorClient:
         *,
         base_url: str = "https://api.cursor.com",
         auth: AuthType = "basic",
-        timeout: float = 30.0,
+        timeout: float = DEFAULT_TIMEOUT,
         transport: Optional[httpx.BaseTransport] = None,
         default_headers: Optional[Mapping[str, str]] = None,
     ) -> None:
@@ -99,7 +138,12 @@ class CursorClient:
     def __enter__(self) -> "CursorClient":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
         self.close()
 
     def _auth_header_value(self) -> str:
@@ -112,9 +156,10 @@ class CursorClient:
     def _build_headers(self, extra: Optional[Mapping[str, str]] = None) -> MutableMapping[str, str]:
         # Default headers should never override authentication.
         headers: MutableMapping[str, str] = dict(self._default_headers)
-        headers["Authorization"] = self._auth_header_value()
         if extra:
             headers.update(extra)
+        # Always set Authorization last to ensure it cannot be overridden
+        headers["Authorization"] = self._auth_header_value()
         return headers
 
     def _request(
@@ -137,9 +182,10 @@ class CursorClient:
                 timeout=timeout,
             )
         except httpx.HTTPError as e:
-            raise CursorNetworkError("Request failed due to a network error.", cause=e) from e
+            error_msg = f"Request failed due to a network error: {method} {path}"
+            raise CursorNetworkError(error_msg, cause=e) from e
 
-        if resp.status_code == 304:
+        if resp.status_code == HTTP_STATUS_NOT_MODIFIED:
             return None
 
         if 200 <= resp.status_code < 300:
@@ -151,28 +197,39 @@ class CursorClient:
                 return resp.text
 
             if "application/json" in content_type or content_type.endswith("+json"):
-                return resp.json()
+                try:
+                    return resp.json()
+                except (ValueError, TypeError):
+                    # If JSON parsing fails despite content-type, fallback to text
+                    return resp.text
 
+            # Fallback: try to parse as JSON, otherwise return as text
+            # This handles cases where content-type is missing or unexpected
             try:
                 return resp.json()
-            except ValueError:
+            except (ValueError, TypeError):
+                # ValueError for invalid JSON, TypeError for non-string content
                 return resp.text
 
+        # Extract error message from response body
+        # Priority: message field > error field > reason phrase > default message
         body: Any = None
         message = resp.reason_phrase or "Request failed."
         try:
             body = resp.json()
             if isinstance(body, dict):
+                # Try "message" first, then "error", fallback to reason phrase
                 message = str(body.get("message") or body.get("error") or message)
-        except ValueError:
+        except (ValueError, TypeError):
+            # If JSON parsing fails, use text body if available
             body = resp.text if resp.text else None
             if body:
                 message = str(body)
 
         exc_cls = CursorAPIError
-        if resp.status_code in (401, 403):
+        if resp.status_code in (HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_FORBIDDEN):
             exc_cls = CursorAuthError
-        elif resp.status_code == 429:
+        elif resp.status_code == HTTP_STATUS_TOO_MANY_REQUESTS:
             exc_cls = CursorRateLimitError
 
         raise exc_cls(resp.status_code, message, body=body, headers=dict(resp.headers))
