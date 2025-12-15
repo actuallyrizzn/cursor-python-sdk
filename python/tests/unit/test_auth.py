@@ -48,7 +48,7 @@ def test_context_manager_calls_close() -> None:
     transport = httpx.MockTransport(handler)
 
     class SpyClient(CursorClient):
-        def close(self) -> None:  # type: ignore[override]
+        def close(self) -> None:  # type: ignore[override]  # SpyClient.close intentionally overrides parent but type checker flags it
             closed["value"] = True
             super().close()
 

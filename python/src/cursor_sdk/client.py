@@ -15,6 +15,9 @@ from cursor_sdk.errors import (
 AuthType = Literal["basic", "bearer"]
 
 
+# Tuple of (HTTP method, path template, method name) for all API endpoints.
+# Path templates use :paramName or {paramName} format for path parameters.
+# Method names are derived from HTTP method + path (e.g., GET /teams/members -> get_teams_members).
 ENDPOINT_SPECS: tuple[tuple[str, str, str], ...] = (
     ('DELETE', '/settings/repo-blocklists/repos/:repoId', 'delete_settings_repo_blocklists_repos_repo_id'),
     ('DELETE', '/teams/groups/:groupId', 'delete_teams_groups_group_id'),
@@ -134,7 +137,7 @@ class CursorClient:
                 timeout=timeout,
             )
         except httpx.HTTPError as e:
-            raise CursorNetworkError("Request failed due to a network error", cause=e) from e
+            raise CursorNetworkError("Request failed due to a network error.", cause=e) from e
 
         if resp.status_code == 304:
             return None
@@ -156,7 +159,7 @@ class CursorClient:
                 return resp.text
 
         body: Any = None
-        message = resp.reason_phrase or "Request failed"
+        message = resp.reason_phrase or "Request failed."
         try:
             body = resp.json()
             if isinstance(body, dict):

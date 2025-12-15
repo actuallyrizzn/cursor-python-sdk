@@ -36,6 +36,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def server_base_url() -> str:
+    # Using port 0 lets the OS assign an available port automatically.
+    # This avoids port conflicts when running tests in parallel or on CI.
     httpd = HTTPServer(("127.0.0.1", 0), _Handler)
     host, port = httpd.server_address
 
