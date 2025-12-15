@@ -32,6 +32,7 @@ This file is generated from the public Cursor docs and is intended to capture **
 | GET | /analytics/team/plans | [link](https://cursor.com/docs/account/teams/analytics-api) |
 | GET | /analytics/team/tabs | [link](https://cursor.com/docs/account/teams/analytics-api) |
 | GET | /analytics/team/top-file-extensions | [link](https://cursor.com/docs/account/teams/analytics-api) |
+| POST | /bugbot/repo/update | [link](https://cursor.com/docs/bugbot) |
 | GET | /settings/repo-blocklists/repos | [link](https://cursor.com/docs/account/teams/admin-api) |
 | DELETE | /settings/repo-blocklists/repos/:repoId | [link](https://cursor.com/docs/account/teams/admin-api) |
 | POST | /settings/repo-blocklists/repos/upsert | [link](https://cursor.com/docs/account/teams/admin-api) |
@@ -2773,6 +2774,222 @@ English
 
 ---
 
+### Bugbot
+
+Source: https://cursor.com/docs/bugbot
+
+Endpoints found on this page:
+
+- `POST /bugbot/repo/update`
+
+Core
+
+# Bugbot
+
+Bugbot reviews pull requests and identifies bugs, security issues, and code quality problems.
+
+On Teams and Individual Plans, Bugbot includes a free tier: every user gets a limited number of free PR reviews each month. When you reach the limit, reviews pause until your next billing cycle. You can upgrade anytime to a 14‑day free Pro trial for unlimited reviews (subject to standard abuse guardrails).
+
+## [How it works](#how-it-works)
+
+Bugbot analyzes PR diffs and leaves comments with explanations and fix suggestions. It runs automatically on each PR update or manually when triggered.
+
+-   Runs **automatic reviews** on every PR update
+-   **Manual trigger** by commenting `cursor review` or `bugbot run` on any PR
+-   **Uses existing PR comments as context**: reads GitHub PR comments (top‑level and inline) to avoid duplicate suggestions and build on prior feedback
+-   **Fix in Cursor** links open issues directly in Cursor
+-   **Fix in Web** links open issues directly in [cursor.com/agents](https://cursor.com/agents)
+
+## [Setup](#setup)
+
+GitHub.comGitLab.comGitHub Enterprise ServerGitLab Self-Hosted
+
+Requires Cursor admin access and GitHub org admin access.
+
+1.  Go to [cursor.com/dashboard](https://cursor.com/dashboard?tab=integrations)
+2.  Navigate to the Integrations tab
+3.  Click `Connect GitHub` (or `Manage Connections` if already connected)
+4.  Follow the GitHub installation flow
+5.  Return to the dashboard to enable Bugbot on specific repositories
+
+## [Configuration](#configuration)
+
+IndividualTeam
+
+### [Repository settings](#repository-settings-1)
+
+Team admins can enable Bugbot per repository, configure allow/deny lists for reviewers, and set:
+
+-   Run **only once** per PR per installation, skipping subsequent commits
+-   **Disable inline reviews** to prevent Bugbot from leaving comments directly on code lines
+
+Bugbot runs for all contributors to enabled repositories, regardless of team membership.
+
+### [Personal settings](#personal-settings-1)
+
+Team members can override settings for their own PRs:
+
+-   Run **only when mentioned** by commenting `cursor review` or `bugbot run`
+-   Run **only once** per PR, skipping subsequent commits
+-   **Enable reviews on draft PRs** to include draft pull requests in automatic reviews
+
+### [Analytics](#analytics)
+
+![Bugbot dashboard](/docs-static/_next/image?url=%2Fdocs-static%2Fimages%2Fbugbot%2Fbugbot-dashboard.png&w=1920&q=75)
+
+## [Rules](#rules)
+
+Create `.cursor/BUGBOT.md` files to provide project-specific context for reviews. Bugbot always includes the root `.cursor/BUGBOT.md` file and any additional files found while traversing upward from changed files.
+
+```
+project/
+  .cursor/BUGBOT.md          # Always included (project-wide rules)
+  backend/
+    .cursor/BUGBOT.md        # Included when reviewing backend files
+    api/
+      .cursor/BUGBOT.md      # Included when reviewing API files
+  frontend/
+    .cursor/BUGBOT.md        # Included when reviewing frontend files
+```
+
+### [Team rules](#team-rules)
+
+Team admins can create rules from the [Bugbot dashboard](https://cursor.com/dashboard?tab=bugbot) that apply to all repositories in the team. These rules are available to every enabled repository, making it easy to enforce organization-wide standards.
+
+When both Team Rules and project rule files (`.cursor/BUGBOT.md`) exist, Bugbot uses both. They are applied in this order: **Team Rules → project BUGBOT.md (including nested files) → User Rules**.
+
+### [Examples](#examples)
+
+### 
+
+Security: Flag any use of eval() or exec()
+
+### 
+
+OSS licenses: Prevent importing disallowed licenses
+
+### 
+
+Language standards: Flag React componentWillMount usage
+
+### 
+
+Standards: Require tests for backend changes
+
+### 
+
+Style: Disallow TODO comments
+
+## [Admin Configuration API](#admin-configuration-api)
+
+Team admins can use the Bugbot Admin API to programmatically enable or disable Bugbot on repositories. This is useful for automating repository management or enabling Bugbot on large numbers of repositories at once.
+
+### [Creating an API Key](#creating-an-api-key)
+
+1.  Visit the [Settings tab in the Cursor dashboard](https://cursor.com/dashboard?tab=settings)
+2.  Under **Advanced**, click **New Admin API Key**
+3.  Save the API key
+
+### [Enabling or Disabling Repositories](#enabling-or-disabling-repositories)
+
+Use the `/bugbot/repo/update` endpoint to toggle Bugbot on or off for a repository:
+
+```
+curl -X POST https://api.cursor.com/bugbot/repo/update \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repoUrl": "https://github.com/your-org/your-repo",
+    "enabled": true
+  }'
+```
+
+**Parameters:**
+
+-   `repoUrl` (string, required): The full URL of the repository
+-   `enabled` (boolean, required): `true` to enable Bugbot, `false` to disable it
+
+The dashboard UI may take a moment to reflect changes made through the API due to caching. The API response shows the current state in the database.
+
+## [Pricing](#pricing)
+
+Bugbot offers two tiers: **Free** and **Pro**.
+
+### [Free tier](#free-tier)
+
+On Teams and Individual Cursor plans, every user gets a limited number of free PR reviews each month. For teams, each team member gets their own free reviews. When you reach the limit, reviews pause until your next billing cycle. You can upgrade anytime to a paid Bugbot plan for unlimited reviews.
+
+### [Pro tier](#pro-tier)
+
+IndividualsTeams
+
+### [Per-user billing](#per-user-billing)
+
+Teams pay $40 per user per month for unlimited reviews.
+
+We count a user as someone who authored PRs reviewed by Bugbot in a month.
+
+All licenses are relinquished at the start of each billing cycle, and will be assigned out on a first-come, first-served basis. If a user doesn't author any PRs reviewed by Bugbot in a month, the seat can be used by another user.
+
+### [Seat limits](#seat-limits)
+
+Team admins can set maximum Bugbot seats per month to control costs.
+
+### [Getting started](#getting-started-1)
+
+Subscribe through your team dashboard to enable billing.
+
+### [Abuse guardrails](#abuse-guardrails)
+
+In order to prevent abuse, we have a pooled cap of 200 pull requests per month for every Bugbot license. If you need more than 200 pull requests per month, please contact us at [hi@cursor.com](mailto:hi@cursor.com) and we'll be happy to help you out.
+
+For example, if your team has 100 users, your organization will initially be able to review 20,000 pull requests per month. If you reach that limit naturally, please reach out to us and we'll be happy to increase the limit.
+
+## [Troubleshooting](#troubleshooting)
+
+If Bugbot isn't working:
+
+1.  **Enable verbose mode** by commenting `cursor review verbose=true` or `bugbot run verbose=true` for detailed logs and request ID
+2.  **Check permissions** to verify Bugbot has repository access
+3.  **Verify installation** to confirm the GitHub app is installed and enabled
+
+Include the request ID from verbose mode when reporting issues.
+
+## [FAQ](#faq)
+
+### 
+
+Does Bugbot read GitHub PR comments?
+
+### 
+
+Is Bugbot privacy-mode compliant?
+
+### 
+
+What happens when I hit the free tier limit?
+
+### 
+
+How do I give Bugbot access to my GitLab or GitHub Enterprise Server instance?
+
+English
+
+-   English
+-   简体中文
+-   日本語
+-   繁體中文
+-   Español
+-   Français
+-   Português
+-   한국어
+-   Русский
+-   Türkçe
+-   Bahasa Indonesia
+-   Deutsch
+
+---
+
 ### Cloud Agents API
 
 Source: https://cursor.com/docs/cloud-agent/api/endpoints
@@ -3604,6 +3821,245 @@ Server-side error. Contact support if persistent.
 {
   "error": "Internal Server Error",
   "message": "An unexpected error occurred"
+}
+```
+
+English
+
+-   English
+-   简体中文
+-   日本語
+-   繁體中文
+-   Español
+-   Français
+-   Português
+-   한국어
+-   Русский
+-   Türkçe
+-   Bahasa Indonesia
+-   Deutsch
+
+---
+
+### MCP Extension API Reference
+
+Source: https://cursor.com/docs/context/mcp-extension-api
+
+Context
+
+# MCP Extension API Reference
+
+The Cursor Extension API provides programmatic access to register and manage MCP servers without modifying `mcp.json` files directly. This is particularly useful for enterprise environments, onboarding tools, or MDM systems that need to dynamically configure MCP servers.
+
+## [Overview](#overview)
+
+The MCP Extension API allows you to:
+
+-   Register MCP servers programmatically
+-   Support both HTTP/SSE and stdio transport methods
+-   Use the same configuration schema as `mcp.json`
+-   Manage server registration dynamically
+
+This API is useful for organizations that need to:
+
+-   Deploy MCP configurations programmatically
+-   Integrate MCP setup into onboarding workflows
+-   Manage MCP servers through enterprise tools
+-   Avoid manual `mcp.json` modifications
+
+## [API Reference](#api-reference)
+
+### [`vscode.cursor.mcp.registerServer`](#vscodecursormcpregisterserver)
+
+Registers an MCP server that Cursor can communicate with.
+
+**Signature:**
+
+```
+vscode.cursor.mcp.registerServer(config: ExtMCPServerConfig): void
+```
+
+**Parameters:**
+
+-   `config: ExtMCPServerConfig` - The server configuration object
+
+### [`vscode.cursor.mcp.unregisterServer`](#vscodecursormcpunregisterserver)
+
+Unregisters a previously registered MCP server.
+
+**Signature:**
+
+```
+vscode.cursor.mcp.unregisterServer(serverName: string): void
+```
+
+**Parameters:**
+
+-   `serverName: string` - The name of the server to unregister
+
+## [Type Definitions](#type-definitions)
+
+Use these TypeScript definitions for type checking:
+
+```
+declare module "vscode" {
+  export namespace cursor {
+    export namespace mcp {
+      export interface StdioServerConfig {
+        name: string;
+        server: {
+          command: string;
+          args: string[];
+          env: Record<string, string>;
+        };
+      }
+
+      export interface RemoteServerConfig {
+        name: string;
+        server: {
+          url: string;
+          /**
+           * Optional HTTP headers to include with every request to this server (e.g. for authentication).
+           * The keys are header names and the values are header values.
+           */
+          headers?: Record<string, string>;
+        };
+      }
+
+      export type ExtMCPServerConfig = StdioServerConfig | RemoteServerConfig;
+
+      /**
+       * Register an MCP server that the Cursor extension can communicate with.
+       *
+       * The server can be exposed either over HTTP(S) (SSE/streamable HTTP) **or** as a local
+       * stdio process.
+       */
+      export const registerServer: (config: ExtMCPServerConfig) => void;
+      export const unregisterServer: (serverName: string) => void;
+    }
+  }
+}
+```
+
+## [Configuration Types](#configuration-types)
+
+### [HTTP/SSE Server Configuration](#httpsse-server-configuration)
+
+For servers running on HTTP or Server-Sent Events:
+
+```
+interface RemoteServerConfig {
+  name: string;
+  server: {
+    url: string;
+    headers?: Record<string, string>;
+  };
+}
+```
+
+**Properties:**
+
+-   `name`: Unique identifier for the server
+-   `server.url`: The HTTP endpoint URL
+-   `server.headers` (optional): HTTP headers for authentication or other purposes
+
+### [Stdio Server Configuration](#stdio-server-configuration)
+
+For local servers that communicate via standard input/output:
+
+```
+interface StdioServerConfig {
+  name: string;
+  server: {
+    command: string;
+    args: string[];
+    env: Record<string, string>;
+  };
+}
+```
+
+**Properties:**
+
+-   `name`: Unique identifier for the server
+-   `server.command`: The executable command
+-   `server.args`: Command line arguments
+-   `server.env`: Environment variables
+
+## [Examples](#examples)
+
+### [HTTP/SSE Server](#httpsse-server)
+
+Register a remote MCP server with authentication:
+
+```
+vscode.cursor.mcp.registerServer({
+  name: "my-remote-server",
+  server: {
+    url: "https://api.example.com/mcp",
+    headers: {
+      Authorization: "Bearer your-token-here",
+      "X-API-Key": "your-api-key",
+    },
+  },
+});
+```
+
+### [Stdio Server](#stdio-server)
+
+Register a local MCP server:
+
+```
+vscode.cursor.mcp.registerServer({
+  name: "my-local-server",
+  server: {
+    command: "python",
+    args: ["-m", "my_mcp_server"],
+    env: {
+      API_KEY: "your-api-key",
+      DEBUG: "true",
+    },
+  },
+});
+```
+
+### [Node.js Server](#nodejs-server)
+
+Register a Node.js-based MCP server:
+
+```
+vscode.cursor.mcp.registerServer({
+  name: "nodejs-server",
+  server: {
+    command: "npx",
+    args: ["-y", "@company/mcp-server"],
+    env: {
+      NODE_ENV: "production",
+      CONFIG_PATH: "/path/to/config",
+    },
+  },
+});
+```
+
+## [Managing Servers](#managing-servers)
+
+### [Unregister a Server](#unregister-a-server)
+
+```
+// Unregister a previously registered server
+vscode.cursor.mcp.unregisterServer("my-remote-server");
+```
+
+### [Conditional Registration](#conditional-registration)
+
+```
+// Only register if not already registered
+if (!isServerRegistered("my-server")) {
+  vscode.cursor.mcp.registerServer({
+    name: "my-server",
+    server: {
+      url: "https://api.example.com/mcp",
+    },
+  });
 }
 ```
 
