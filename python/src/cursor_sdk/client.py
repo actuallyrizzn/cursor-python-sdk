@@ -188,15 +188,9 @@ class CursorClient:
 
     def __exit__(
         self,
-<<<<<<< HEAD
-        exc_type: type[BaseException] | None,
-        exc: BaseException | None,
-        tb: TracebackType | None,
-=======
         exc_type: Optional[type[BaseException]],
         exc: Optional[BaseException],
         tb: Optional[TracebackType],
->>>>>>> origin/main
     ) -> None:
         self.close()
 
